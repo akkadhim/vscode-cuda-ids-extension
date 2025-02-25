@@ -3,7 +3,7 @@
   "displayName": "CUDA Device IDs Extension",
   "description": "A VS Code extension to show CUDA device IDs from docker-compose.yml in the status bar.",
   "version": "0.0.1",
-  "publisher": "Ahmed K",
+  "publisher": "ahmedkk",
   "engines": {
     "vscode": "^1.60.0"
   },
