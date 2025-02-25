@@ -47,7 +47,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/akkadhim/vscode-cuda-ids.git"
+    "url": "https://github.com/akkadhim/vscode-cuda-ids-extension"
   },
   "license": "MIT"
 }

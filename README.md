@@ -17,7 +17,7 @@ This extension displays CUDA device IDs in the status bar of Visual Studio Code.
 
 1. Clone the repository:
    ```
-   git clone https://github.com/akkadhim/vscode-cuda-ids.git
+   git clone https://github.com/akkadhim/vscode-cuda-ids-extension.git
    ```
 
 2. Open the project in Visual Studio Code.
