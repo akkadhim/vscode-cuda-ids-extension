@@ -2,7 +2,7 @@
     "name":  "vscode-cuda-ids",
     "displayName":  "CUDA Device IDs Extension",
     "description":  "A VS Code extension to show CUDA device IDs from docker-compose.yml in the status bar.",
-    "version":  "0.0.4",
+    "version":  "0.0.6",
     "publisher":  "ahmedkk",
     "engines":  {
                     "vscode":  "^1.60.0"
@@ -38,7 +38,18 @@
                                                            "name":  "CUDA Device IDs"
                                                        }
                                                    ]
-                                  }
+                                  },
+                        "configuration":  {
+                                              "type":  "object",
+                                              "title":  "CUDA Device IDs",
+                                              "properties":  {
+                                                                 "cudaIds.showInRemoteHosts":  {
+                                                                                                   "type":  "boolean",
+                                                                                                   "default":  true,
+                                                                                                   "description":  "Allow the extension to show CUDA device IDs on any remote extension host (e.g. SSH). When false the extension only shows the status in devcontainer remotes."
+                                                                                               }
+                                                             }
+                                          }
                     },
     "devDependencies":  {
                             "typescript":  "^4.4.3",

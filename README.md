@@ -1,80 +1,87 @@
 # VS Code CUDA Device IDs Extension
 
-This extension displays CUDA device IDs in the status bar of Visual Studio Code. It reads the `device_ids` from the `.devcontainer/docker-compose.yml` file, allowing users to quickly see the available device IDs while working in their development environment.
+A small VS Code extension that shows CUDA device IDs in the status bar by reading the
+`device_ids` entry from your `.devcontainer/docker-compose.yml`. It's useful when you
+work with development containers or remote hosts that expose NVIDIA GPUs — the status
+bar shows which GPU device IDs are available so you can quickly reference them.
 
-## Features
+## Quick overview (for users)
 
-- Displays device IDs in the status bar.
-- Automatically updates when the `docker-compose.yml` file changes.
-- Only activates if a valid `docker-compose.yml` file with `device_ids` is present.
-
-## Requirements
-
-- Visual Studio Code
-- A valid `.devcontainer/docker-compose.yml` file with a `device_ids` section.
-
-## Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/akkadhim/vscode-cuda-ids-extension.git
-   ```
-
-2. Open the project in Visual Studio Code.
-
-3. Install the dependencies:
-   ```
-   npm install
-   ```
-
-4. Press `F5` to run the extension in a new Extension Development Host window.
+- What it shows: `CUDA IDs: <ids>` in the left status bar when `device_ids` are detected.
+- Where it reads IDs from: `.devcontainer/docker-compose.yml` (supports nested locations such as `deploy.resources.reservations.devices[*].device_ids`).
+- Default behavior: the extension is allowed to run on remote extension hosts by default. You can opt out via settings.
+- Debug helper: Command Palette → `CUDA Device IDs: Debug Check` — shows remote name and whether device IDs were found.
 
 ## Usage
 
-Once the extension is activated, the CUDA device IDs will be displayed in the status bar. If the `device_ids` section in the `docker-compose.yml` file is updated, the status bar will reflect the changes automatically.
+1. Make sure your workspace contains `.devcontainer/docker-compose.yml` with a `device_ids` entry under a service (examples below).
+2. The extension will automatically parse the file and show `CUDA IDs: <ids>` in the status bar.
+3. If CUDA is not available on the host, the extension appends `(No CUDA engine)` to the status text.
 
-## Packaging & Publishing (helper script)
+Quick example of supported YAML (simple and nested examples):
 
-This repository includes a helper PowerShell script at `scripts/publish.ps1` to simplify packaging and publishing.
-
-Basic usage (from repository root):
-
-- Create a patch bump, compile and package (.vsix) without publishing:
-
-```powershell
-.\scripts\publish.ps1 -Bump patch -PackageOnly
+Simple:
+```yaml
+services:
+   app:
+      device_ids: ["0", "1"]
 ```
 
-- Package only (no version bump):
+Nested (deploy -> resources -> reservations -> devices[*] -> device_ids):
+```yaml
+services:
+   app:
+      deploy:
+         resources:
+            reservations:
+               devices:
+                  - driver: nvidia
+                     capabilities: [gpu]
+                     device_ids: ["2"]
+```
+
+## Quick settings & requirements
+
+- Requirements: Visual Studio Code and a workspace with `.devcontainer/docker-compose.yml` that contains `device_ids` (or nested `devices` entries).
+- Enable/disable remotely: Setting `cudaIds.showInRemoteHosts` controls whether the extension runs on remote hosts (default: true).
+   - Settings UI: File → Preferences → Settings and search for "CUDA Device IDs" or "Show In Remote Hosts".
+   - Settings JSON: add `"cudaIds.showInRemoteHosts": true` to your settings.
+
+## Development (how to run locally)
+
+1. Clone the repository and open it in VS Code:
+```powershell
+git clone https://github.com/akkadhim/vscode-cuda-ids-extension.git
+cd vscode-cuda-ids-extension
+npm install
+```
+2. Press `F5` in VS Code to run the extension in an Extension Development Host window.
+
+## Packaging & publishing
+
+This repo includes a helper PowerShell script at `scripts/publish.ps1` that automates version bumping (edits `package.json`), compiling, packaging and optionally publishing. Examples:
 
 ```powershell
+# package (no publish)
 .\scripts\publish.ps1 -Bump none -PackageOnly
-```
 
-- Bump, package and publish to the Marketplace (the script will prompt for your VSCE PAT):
-
-```powershell
+# bump patch, package and publish (prompts for PAT)
 .\scripts\publish.ps1 -Bump patch -Publish
 ```
 
 Notes:
-- The script edits `package.json` to bump the version (no git commits or tags are created); commit and push manually from VS Code when ready.
-- To publish, you need a Personal Access Token (PAT) for Marketplace publishing. The script will prompt securely if you don't pass `-PAT`.
-- The script writes `package.json` without a UTF-8 BOM to avoid packaging errors.
-
-If you prefer to package manually:
-
+- The helper script edits `package.json` but does not commit or push — commit/push manually from VS Code when you're ready.
+- The script also writes `package.json` without a UTF-8 BOM to avoid packaging errors.
+- If you prefer manual packaging:
 ```powershell
-# compile
 npm run compile
-# package
 npx vsce package
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bugs.
+Contributions are welcome. Feel free to open issues or pull requests.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+MIT — see the LICENSE file for details.

@@ -24,6 +24,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // Register a simple debug command the user can run to get a helpful message
     // about missing .devcontainer/docker-compose.yml or missing device_ids.
     const debugCmd = vscode.commands.registerCommand('cuda-ids.debugCheck', async () => {
+        const cfg = vscode.workspace.getConfiguration('cudaIds');
+        const showInAnyRemote = cfg.get<boolean>('showInRemoteHosts', false);
+        vscode.window.showInformationMessage(`Remote name: ${remoteName || '<none>'}; showInRemoteHosts: ${showInAnyRemote}`);
+
         const dockerComposePath = path.join(workspaceFolder.uri.fsPath, '.devcontainer', 'docker-compose.yml');
         if (!fs.existsSync(dockerComposePath)) {
             vscode.window.showInformationMessage('.devcontainer/docker-compose.yml not found in workspace.');
@@ -39,11 +43,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(debugCmd);
 
-    // If not inside a devcontainer, do not show anything in the status bar.
-    if (!remoteName.toLowerCase().includes('dev-container') && !remoteName.toLowerCase().includes('devcontainer')) {
-        console.log('Not running inside a dev container. Status bar will remain hidden.');
-        context.subscriptions.push(statusBarController);
-        return;
+    // Respect user configuration: allow showing on any remote host if enabled.
+    const cfg = vscode.workspace.getConfiguration('cudaIds');
+    const showInAnyRemote = cfg.get<boolean>('showInRemoteHosts', false);
+
+    if (!showInAnyRemote) {
+        // If the user did not opt-in, only show when running inside a devcontainer remote.
+        if (!remoteName.toLowerCase().includes('dev-container') && !remoteName.toLowerCase().includes('devcontainer')) {
+            console.log('Not running inside a dev container. Status bar will remain hidden.');
+            context.subscriptions.push(statusBarController);
+            return;
+        }
+    } else {
+        // showInAnyRemote=true: allow running on any remote host (SSH, containers, etc.).
+        console.log(`showInRemoteHosts is enabled; remoteName='${remoteName}'`);
     }
 
     const dockerComposePath = path.join(workspaceFolder.uri.fsPath, '.devcontainer', 'docker-compose.yml');
@@ -61,9 +74,39 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         } else {
             console.log('No device IDs found in docker-compose.yml');
+            // If the user opted into showing on any remote host, give a helpful message.
+            const cfg = vscode.workspace.getConfiguration('cudaIds');
+            const showInAnyRemote = cfg.get<boolean>('showInRemoteHosts', false);
+            if (showInAnyRemote) {
+                const choice = await vscode.window.showInformationMessage(
+                    'docker-compose.yml found but no "device_ids" entry was detected. The extension will not show device IDs.',
+                    'Open Settings',
+                    'Run Debug Check'
+                );
+                if (choice === 'Open Settings') {
+                    // Open the Settings UI focused on this setting
+                    await vscode.commands.executeCommand('workbench.action.openSettings', 'cudaIds.showInRemoteHosts');
+                } else if (choice === 'Run Debug Check') {
+                    await vscode.commands.executeCommand('cuda-ids.debugCheck');
+                }
+            }
         }
     } else {
         console.log('docker-compose.yml not found');
+        const cfg = vscode.workspace.getConfiguration('cudaIds');
+        const showInAnyRemote = cfg.get<boolean>('showInRemoteHosts', false);
+        if (showInAnyRemote) {
+            const choice = await vscode.window.showInformationMessage(
+                '.devcontainer/docker-compose.yml not found in workspace. The extension requires this file with a `device_ids` entry to show CUDA IDs.',
+                'Open Settings',
+                'Run Debug Check'
+            );
+            if (choice === 'Open Settings') {
+                await vscode.commands.executeCommand('workbench.action.openSettings', 'cudaIds.showInRemoteHosts');
+            } else if (choice === 'Run Debug Check') {
+                await vscode.commands.executeCommand('cuda-ids.debugCheck');
+            }
+        }
     }
 
     context.subscriptions.push(statusBarController);
@@ -73,18 +116,55 @@ function getDeviceIdsFromDockerCompose(filePath: string): string | null {
     try {
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const parsedYaml = yaml.parse(fileContent) as any;
-
-        // Try to locate device_ids under any service.
+        // Deep-search for device_ids or devices anywhere under services.
         const services = parsedYaml?.services ?? {};
-        for (const svcName of Object.keys(services)) {
-            const svc = services[svcName];
-            const deviceIds = svc?.device_ids ?? svc?.devices ?? null;
-            if (deviceIds) {
-                if (Array.isArray(deviceIds)) {
-                    return deviceIds.join(', ');
-                }
-                return String(deviceIds);
+
+        const found: string[] = [];
+
+        function collectDeviceIds(node: any) {
+            if (node == null) return;
+            if (Array.isArray(node)) {
+                for (const item of node) collectDeviceIds(item);
+                return;
             }
+            if (typeof node === 'object') {
+                for (const key of Object.keys(node)) {
+                    const lower = key.toLowerCase();
+                    const val = node[key];
+                    if (lower === 'device_ids' || lower === 'device-ids' || lower === 'deviceids') {
+                        if (Array.isArray(val)) {
+                            for (const v of val) found.push(String(v));
+                        } else if (val != null) {
+                            found.push(String(val));
+                        }
+                    } else if (lower === 'devices') {
+                        // devices could be an array of strings or objects which may contain device_ids
+                        if (Array.isArray(val)) {
+                            for (const dv of val) {
+                                if (typeof dv === 'string') {
+                                    // strings like "/dev/nvidia0" — include as-is
+                                    found.push(dv);
+                                } else {
+                                    collectDeviceIds(dv);
+                                }
+                            }
+                        } else {
+                            collectDeviceIds(val);
+                        }
+                    } else {
+                        collectDeviceIds(val);
+                    }
+                }
+            }
+        }
+
+        for (const svcName of Object.keys(services)) {
+            collectDeviceIds(services[svcName]);
+            if (found.length) break;
+        }
+
+        if (found.length) {
+            return found.join(', ');
         }
     } catch (err) {
         console.error('Failed to read/parse docker-compose.yml', err);
