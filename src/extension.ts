@@ -43,6 +43,79 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(debugCmd);
 
+    // Register command to show live GPU utilization (opens a QuickPick that updates every second).
+    const gpuCmd = vscode.commands.registerCommand('cuda-ids.showGpuUtilization', async () => {
+        const execP = promisify(childExec);
+
+        // Create a QuickPick so it can stay open and be updated.
+        const qp = vscode.window.createQuickPick();
+        qp.placeholder = 'GPU utilization (updates every second). Press Esc or click away to close.';
+        qp.matchOnDescription = false;
+        qp.matchOnDetail = false;
+        qp.busy = true;
+
+        let timer: NodeJS.Timeout | undefined;
+
+        async function updateOnce() {
+            try {
+                qp.busy = true;
+                // Query index, name and utilization
+                const cmd = 'nvidia-smi --query-gpu=index,name,utilization.gpu --format=csv,noheader,nounits';
+                const res = await execP(cmd, { timeout: 2000 });
+                const stdout = (res && (res as any).stdout) || '';
+                const lines = stdout.split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean);
+
+                const items: vscode.QuickPickItem[] = lines.map((l: string) => {
+                    // CSV line e.g. "0, GeForce GTX 1080 Ti, 12"
+                    const parts = l.split(',');
+                    const util = parts.pop()?.trim() ?? '';
+                    const index = parts.shift()?.trim() ?? '';
+                    const name = parts.join(',').trim();
+
+                    const pct = Number(util) || 0;
+                    // Use a short 5-block bar with the '❚' glyph for filled segments to match the requested style.
+                    const barLen = 5;
+                    const filled = Math.round((pct / 100) * barLen);
+                    const filledChar = '❚';
+                    const emptyChar = '░';
+                    const bar = filledChar.repeat(filled) + emptyChar.repeat(Math.max(0, barLen - filled));
+
+                    return { label: `GPU ${index}: ${bar} ${pct}%`, description: name };
+                });
+
+                if (items.length === 0) {
+                    qp.items = [{ label: 'No GPUs detected or nvidia-smi output empty', description: '' }];
+                } else {
+                    qp.items = items;
+                }
+            } catch (err) {
+                qp.items = [{ label: 'Failed to run nvidia-smi or no GPUs found', description: String((err as any)?.message ?? err) }];
+                // stop updates if command fails repeatedly
+                if (timer) {
+                    clearInterval(timer);
+                    timer = undefined;
+                }
+            } finally {
+                qp.busy = false;
+            }
+        }
+
+        qp.onDidHide(() => {
+            if (timer) {
+                clearInterval(timer);
+                timer = undefined;
+            }
+            qp.dispose();
+        });
+
+        qp.show();
+        await updateOnce();
+        // set interval to refresh every 1s
+        timer = setInterval(() => void updateOnce(), 1000);
+    });
+
+    context.subscriptions.push(gpuCmd);
+
     // Respect user configuration: allow showing on any remote host if enabled.
     const cfg = vscode.workspace.getConfiguration('cudaIds');
     const showInAnyRemote = cfg.get<boolean>('showInRemoteHosts', false);

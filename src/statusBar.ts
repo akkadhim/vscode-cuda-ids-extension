@@ -12,6 +12,8 @@ export class StatusBarController {
         const suffixPart = suffix ? ` ${suffix}` : '';
         this.statusBarItem.text = `CUDA IDs: ${text}${suffixPart}`;
         this.statusBarItem.tooltip = suffix ? `Note: ${suffix.replace(/^\s*/, '')}` : `CUDA IDs: ${text}`;
+        // Attach a click command that shows GPU utilization details.
+        this.statusBarItem.command = 'cuda-ids.showGpuUtilization';
         this.statusBarItem.show();
     }
 

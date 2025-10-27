@@ -18,6 +18,15 @@ bar shows which GPU device IDs are available so you can quickly reference them.
 2. The extension will automatically parse the file and show `CUDA IDs: <ids>` in the status bar.
 3. If CUDA is not available on the host, the extension appends `(No CUDA engine)` to the status text.
 
+Live GPU utilization menu
+-------------------------
+
+Click the status bar item (or run the command `CUDA Device IDs: Show GPU Utilization`) to open a small live menu that shows GPU utilization as short bars (e.g. `❚❚❚░░`) and percent. The menu updates every 1 second and stops updating when you close it. Requires `nvidia-smi` to be available on the host.
+
+Screenshot: example of the live GPU utilization menu:
+
+![GPU utilization example](./images/gpu_usage.png)
+
 Quick example of supported YAML (simple and nested examples):
 
 Simple:
