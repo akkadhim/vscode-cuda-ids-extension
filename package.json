@@ -25,6 +25,10 @@
       {
         "command": "extension.showDeviceIds",
         "title": "Show CUDA Device IDs"
+      },
+      {
+        "command": "cuda-ids.debugCheck",
+        "title": "CUDA Device IDs: Debug Check"
       }
     ],
     "views": {

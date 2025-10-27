@@ -7,8 +7,11 @@ export class StatusBarController {
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
     }
 
-    public createStatusBarItem(text: string) {
-        this.statusBarItem.text = `CUDA IDs: ${text}`;
+    // text: main text to show (e.g. device ids). suffix: optional small note like '(No CUDA engine)'.
+    public createStatusBarItem(text: string, suffix?: string) {
+        const suffixPart = suffix ? ` ${suffix}` : '';
+        this.statusBarItem.text = `CUDA IDs: ${text}${suffixPart}`;
+        this.statusBarItem.tooltip = suffix ? `Note: ${suffix.replace(/^\s*/, '')}` : `CUDA IDs: ${text}`;
         this.statusBarItem.show();
     }
 
