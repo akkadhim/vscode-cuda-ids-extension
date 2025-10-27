@@ -1,57 +1,57 @@
 {
-  "name": "vscode-cuda-ids",
-  "displayName": "CUDA Device IDs Extension",
-  "description": "A VS Code extension to show CUDA device IDs from docker-compose.yml in the status bar.",
-  "version": "0.0.4",
-  "publisher": "ahmedkk",
-  "engines": {
-    "vscode": "^1.60.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "icon": "images/icon.png",
-  "activationEvents": [
-    "onStartupFinished"
-  ],
-  "main": "./out/extension.js",
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "npx tsc -p ./",
-    "watch": "tsc -watch -p ./tsconfig.json"
-  },
-  "contributes": {
-    "commands": [
-      {
-        "command": "extension.showDeviceIds",
-        "title": "Show CUDA Device IDs"
-      },
-      {
-        "command": "cuda-ids.debugCheck",
-        "title": "CUDA Device IDs: Debug Check"
-      }
-    ],
-    "views": {
-      "explorer": [
-        {
-          "id": "deviceIdsView",
-          "name": "CUDA Device IDs"
-        }
-      ]
-    }
-  },
-  "devDependencies": {
-    "typescript": "^4.4.3",
-    "@types/node": "^16.9.1",
-    "@types/vscode": "^1.60.0",
-    "vscode": "^1.1.37"
-  },
-  "dependencies": {
-    "yaml": "^1.10.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/akkadhim/vscode-cuda-ids-extension"
-  },
-  "license": "MIT"
+    "name":  "vscode-cuda-ids",
+    "displayName":  "CUDA Device IDs Extension",
+    "description":  "A VS Code extension to show CUDA device IDs from docker-compose.yml in the status bar.",
+    "version":  "0.0.6",
+    "publisher":  "ahmedkk",
+    "engines":  {
+                    "vscode":  "^1.60.0"
+                },
+    "categories":  [
+                       "Other"
+                   ],
+    "icon":  "images/icon.png",
+    "activationEvents":  [
+                             "onStartupFinished"
+                         ],
+    "main":  "./out/extension.js",
+    "scripts":  {
+                    "vscode:prepublish":  "npm run compile",
+                    "compile":  "npx tsc -p ./",
+                    "watch":  "tsc -watch -p ./tsconfig.json"
+                },
+    "contributes":  {
+                        "commands":  [
+                                         {
+                                             "command":  "extension.showDeviceIds",
+                                             "title":  "Show CUDA Device IDs"
+                                         },
+                                         {
+                                             "command":  "cuda-ids.debugCheck",
+                                             "title":  "CUDA Device IDs: Debug Check"
+                                         }
+                                     ],
+                        "views":  {
+                                      "explorer":  [
+                                                       {
+                                                           "id":  "deviceIdsView",
+                                                           "name":  "CUDA Device IDs"
+                                                       }
+                                                   ]
+                                  }
+                    },
+    "devDependencies":  {
+                            "typescript":  "^4.4.3",
+                            "@types/node":  "^16.9.1",
+                            "@types/vscode":  "^1.60.0",
+                            "vscode":  "^1.1.37"
+                        },
+    "dependencies":  {
+                         "yaml":  "^1.10.2"
+                     },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "https://github.com/akkadhim/vscode-cuda-ids-extension"
+                   },
+    "license":  "MIT"
 }

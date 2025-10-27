@@ -27,11 +27,41 @@ try {
 Write-Host "Working directory: $PWD"
 
 if ($Bump -ne 'none') {
-    Write-Host "Bumping version ($Bump)..."
-    npm version $Bump -m "chore(release): %s [skip ci]" 2>&1 | Write-Host
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "npm version returned exit code $LASTEXITCODE. Continuing anyway."
+    Write-Host "Bumping version ($Bump) in package.json (no git commit/tag will be created)..."
+    $pkgPath = Join-Path $PWD 'package.json'
+    if (-not (Test-Path $pkgPath)) {
+        Write-Error "package.json not found at $pkgPath"
+        exit 1
     }
+    $pkgText = Get-Content $pkgPath -Raw
+    $pkg = $pkgText | ConvertFrom-Json
+    $oldVersion = $pkg.version
+    if (-not $oldVersion) {
+        Write-Error "No version field found in package.json"
+        exit 1
+    }
+
+    # Simple semver bump (ignore prerelease/build metadata)
+    $parts = $oldVersion.Split('.')
+    [int]$major = [int]$parts[0]
+    [int]$minor = [int]$parts[1]
+    [int]$patch = 0
+    if ($parts.Length -ge 3) { $patch = [int]$parts[2] }
+
+    switch ($Bump) {
+        'patch' { $patch += 1 }
+        'minor' { $minor += 1; $patch = 0 }
+        'major' { $major += 1; $minor = 0; $patch = 0 }
+    }
+
+    $newVersion = "$major.$minor.$patch"
+    $pkg.version = $newVersion
+    # Write JSON preserving basic formatting
+    # Write JSON without UTF-8 BOM so tooling that expects plain UTF-8 can parse it.
+    $jsonOut = $pkg | ConvertTo-Json -Depth 10
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($pkgPath, $jsonOut, $utf8NoBom)
+    Write-Host "Updated package.json version: $oldVersion -> $newVersion"
 }
 
 Write-Host "Compiling TypeScript..."

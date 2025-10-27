@@ -30,3 +30,6 @@ coverage/
 
 # Test files
 .devcontainer/
+ 
+# Ignore generated VSIX packages
+*.vsix
